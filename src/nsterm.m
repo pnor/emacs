@@ -2614,9 +2614,17 @@ ns_clear_frame (struct frame *f)
 
   block_input ();
   ns_focus (f, &r, 1);
-  [ns_lookup_indexed_color (NS_FACE_BACKGROUND
-			    (FACE_FROM_ID (f, DEFAULT_FACE_ID)), f) set];
+  // TODO hmm this didn't work; got to do more?
+//   [ns_lookup_indexed_color (NS_FACE_BACKGROUND
+// 			    (FACE_FROM_ID (f, DEFAULT_FACE_ID)), f) set];
+  NSColor* color_to_set = ns_lookup_indexed_color((NS_FACE_BACKGROUND(FACE_FROM_ID(f, DEFAULT_FACE_ID))), f);
+  NSColor* transparent_color = [color_to_set colorWithAlphaComponent:0.4];
+  [transparent_color set];
+  NSLog(@"%@", transparent_color);
+
   NSRectFill (r);
+  [[view window] setBackgroundColor:transparent_color]; // this does something
+
   ns_unfocus (f);
 
   /* as of 2006/11 or so this is now needed */
@@ -2644,8 +2652,11 @@ ns_clear_frame_area (struct frame *f, int x, int y, int width, int height)
 
   r = NSIntersectionRect (r, [view frame]);
   ns_focus (f, &r, 1);
-  [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) set];
-
+  // [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) set];
+  NSColor* color_to_set = ns_lookup_indexed_color((NS_FACE_BACKGROUND(face)), f);
+  NSColor* transparent_color = [color_to_set colorWithAlphaComponent:0.4];
+  [transparent_color set];
+  // ??? only affect the background of region
   NSRectFill (r);
 
   ns_unfocus (f);
