@@ -130,6 +130,30 @@ static void mac_font_get_glyphs_for_variants (CFDataRef, UTF32Char,
                                               const UTF32Char [],
                                               CGGlyph [], CFIndex);
 
+// ================
+// MY EDIT: clearing background with transparency
+static void
+clear_bg_rect(NSColor* clearColor, CGContextRef context, CGRect *background_rect) {
+  do {
+      NSColor *nsColor = clearColor;
+      [nsColor set];
+      CGColorSpaceRef colorSpace = [[nsColor colorSpace] CGColorSpace];
+      NSInteger noc = [nsColor numberOfComponents];
+      CGFloat *components = xmalloc(sizeof(CGFloat) * (1 + noc));
+      CGColorRef refcol_;
+      [nsColor getComponents:components];
+      refcol_ = CGColorCreate(colorSpace, components);
+      xfree(components);
+
+      // inlined the CG_SET_FILL_COLOR_WITH_FACE_BACKGROUND macro
+      // (includes do{})
+      CGContextSetFillColorWithColor(context, refcol_);
+      CGColorRelease(refcol_);
+    } while (0);
+    CGContextFillRects(context, background_rect, 1);
+}
+// ================
+
 /* From CFData to a lisp string.  Always returns a unibyte string.  */
 
 static Lisp_Object
@@ -2921,25 +2945,11 @@ macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
     // TODO changed this...
     // CG_SET_FILL_COLOR_WITH_FACE_BACKGROUND (context, face, f);
     // CGContextFillRects (context, &background_rect, 1);
-    do {
-      // inlined get_cgcolor
-      NSColor *nsColor = [ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f)
-          colorWithAlphaComponent:0.1];
-      [nsColor set];
-      CGColorSpaceRef colorSpace = [[nsColor colorSpace] CGColorSpace];
-      NSInteger noc = [nsColor numberOfComponents];
-      CGFloat *components = xmalloc(sizeof(CGFloat) * (1 + noc));
-      CGColorRef refcol_;
-      [nsColor getComponents:components];
-      refcol_ = CGColorCreate(colorSpace, components);
-      xfree(components);
-
-      // inlined the CG_SET_FILL_COLOR_WITH_FACE_BACKGROUND macro
-      // (includes do{})
-      CGContextSetFillColorWithColor(context, refcol_);
-      CGColorRelease(refcol_);
-    } while (0);
-    CGContextFillRects(context, &background_rect, 1);
+    const float transparency_factor = 0.1;
+    CGContextClearRect(context, background_rect);
+    clear_bg_rect([ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f) colorWithAlphaComponent:transparency_factor],
+                  context,
+                  &background_rect);
   }
 
   if (macfont_info->cgfont)

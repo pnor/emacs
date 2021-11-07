@@ -2640,7 +2640,6 @@ ns_clear_frame (struct frame *f)
   NSColor* color_to_set = ns_lookup_indexed_color((NS_FACE_BACKGROUND(FACE_FROM_ID(f, DEFAULT_FACE_ID))), f);
   NSColor* transparent_color = [color_to_set colorWithAlphaComponent:transparency_factor];
   [transparent_color set];
-  NSLog(@"%@", transparent_color);
 
   NSRectFill (r);
   [[view window] setBackgroundColor:transparent_color]; // this does something
