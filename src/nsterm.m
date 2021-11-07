@@ -4018,16 +4018,10 @@ ns_draw_glyph_string_foreground (struct glyph_string *s)
      (s->for_overlaps ? NS_DUMPGLYPH_FOREGROUND :
       NS_DUMPGLYPH_NORMAL));
 
-  // For now, just always draw with no background
-  // should prolly checkout macfont.m line 2869 if need
   font->driver->draw
     (s, s->cmp_from, s->nchars, x, s->ybase,
      (flags == NS_DUMPGLYPH_NORMAL && !s->background_filled_p)
      || flags == NS_DUMPGLYPH_MOUSEFACE);
-
-  // font->driver->draw
-  //   (s, s->cmp_from, s->nchars, x, s->ybase,
-  //    false);
 }
 
 
