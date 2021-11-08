@@ -80,7 +80,7 @@ static EmacsMenu *mainMenu;
 
 // ================================
 // MY EDIT: make color transparent function
-static const float transparency_factor = 0.1;
+static const float transparency_factor = 0.4;
 static NSColor*
 transparent_background_ns_lookup_indexed_color(struct face* face, struct frame* f) {
       NSColor *base_color =

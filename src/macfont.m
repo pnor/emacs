@@ -2945,7 +2945,7 @@ macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
     // TODO changed this...
     // CG_SET_FILL_COLOR_WITH_FACE_BACKGROUND (context, face, f);
     // CGContextFillRects (context, &background_rect, 1);
-    const float transparency_factor = 0.1;
+    const float transparency_factor = 0.4;
     CGContextClearRect(context, background_rect);
     clear_bg_rect([ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f) colorWithAlphaComponent:transparency_factor],
                   context,
