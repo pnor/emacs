@@ -3715,6 +3715,7 @@ ns_maybe_dumpglyphs_background (struct glyph_string *s, char force_p)
           s->extends_to_end_of_line_p || force_p) {
         struct face *face;
         if (s->hl == DRAW_MOUSE_FACE) {
+          // TODO THIS is the issue, this face
           face = FACE_FROM_ID_OR_NULL(s->f,
                                       MOUSE_HL_INFO(s->f)->mouse_face_face_id);
           if (!face)
@@ -3722,6 +3723,7 @@ ns_maybe_dumpglyphs_background (struct glyph_string *s, char force_p)
         } else {
           face = FACE_FROM_ID(s->f, s->first_glyph->face_id);
         }
+
         if (!face->stipple) {
           // [(NS_FACE_BACKGROUND(face) != 0
           //       ? ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f)
@@ -3729,8 +3731,16 @@ ns_maybe_dumpglyphs_background (struct glyph_string *s, char force_p)
 
           if (NS_FACE_BACKGROUND(face) != 0) {
           // ! Affects whether modeline is transparent
-            [ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f) set];
-            // [[ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f) colorWithAlphaComponent:transparency_factor] set];
+          // TODO error is here though/ modeline and whatever face affects
+          // background are linked
+
+            // For now, just make it transparent
+
+            // NSColor* mystery_color = ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f);
+            // NSLog(@"%@", mystery_color);
+            // [mystery_color set];
+
+            [[ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f) colorWithAlphaComponent:transparency_factor] set];
           } else {
             // [FRAME_BACKGROUND_COLOR(s->f) set];
             [[FRAME_BACKGROUND_COLOR(s->f) colorWithAlphaComponent:transparency_factor] set];
@@ -4129,30 +4139,27 @@ ns_draw_glyph_string (struct glyph_string *s)
 
   NSTRACE_WHEN (NSTRACE_GROUP_GLYPHS, "ns_draw_glyph_string");
 
-  if (s->next && s->right_overhang && !s->for_overlaps/*&&s->hl!=DRAW_CURSOR*/)
-    {
-      int width;
-      struct glyph_string *next;
+  if (s->next && s->right_overhang &&
+      !s->for_overlaps /*&&s->hl!=DRAW_CURSOR*/) {
+    int width;
+    struct glyph_string *next;
 
-      for (width = 0, next = s->next;
-	   next && width < s->right_overhang;
-	   width += next->width, next = next->next)
-	if (next->first_glyph->type != IMAGE_GLYPH)
-          {
-            if (next->first_glyph->type != STRETCH_GLYPH)
-              {
-                n = ns_get_glyph_string_clip_rect (s->next, r);
-                ns_focus (s->f, r, n);
-                ns_maybe_dumpglyphs_background (s->next, 1);
-                ns_unfocus (s->f);
-              }
-            else
-              {
-                ns_dumpglyphs_stretch (s->next);
-              }
-            next->num_clips = 0;
-          }
+    for (width = 0, next = s->next; next && width < s->right_overhang;
+         width += next->width, next = next->next) {
+      if (next->first_glyph->type != IMAGE_GLYPH) {
+        if (next->first_glyph->type != STRETCH_GLYPH) {
+          n = ns_get_glyph_string_clip_rect(s->next, r);
+          ns_focus(s->f, r, n);
+          // TODO this func is the issue
+          ns_maybe_dumpglyphs_background(s->next, 1);
+          ns_unfocus(s->f);
+        } else {
+          ns_dumpglyphs_stretch(s->next);
+        }
+        next->num_clips = 0;
+      }
     }
+  }
 
   if (!s->for_overlaps && s->face->box != FACE_NO_BOX
         && (s->first_glyph->type == CHAR_GLYPH
@@ -4210,7 +4217,6 @@ ns_draw_glyph_string (struct glyph_string *s)
         if (isComposite) {
           ns_draw_composite_glyph_string_foreground (s);
         } else {
-        // TODO This is where text is drawn....
           ns_draw_glyph_string_foreground (s);
         }
       }
