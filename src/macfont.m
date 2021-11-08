@@ -130,6 +130,30 @@ static void mac_font_get_glyphs_for_variants (CFDataRef, UTF32Char,
                                               const UTF32Char [],
                                               CGGlyph [], CFIndex);
 
+// ================
+// MY EDIT: clearing background with transparency
+static void
+clear_bg_rect(NSColor* clearColor, CGContextRef context, CGRect *background_rect) {
+  do {
+      NSColor *nsColor = clearColor;
+      [nsColor set];
+      CGColorSpaceRef colorSpace = [[nsColor colorSpace] CGColorSpace];
+      NSInteger noc = [nsColor numberOfComponents];
+      CGFloat *components = xmalloc(sizeof(CGFloat) * (1 + noc));
+      CGColorRef refcol_;
+      [nsColor getComponents:components];
+      refcol_ = CGColorCreate(colorSpace, components);
+      xfree(components);
+
+      // inlined the CG_SET_FILL_COLOR_WITH_FACE_BACKGROUND macro
+      // (includes do{})
+      CGContextSetFillColorWithColor(context, refcol_);
+      CGColorRelease(refcol_);
+    } while (0);
+    CGContextFillRects(context, background_rect, 1);
+}
+// ================
+
 /* From CFData to a lisp string.  Always returns a unibyte string.  */
 
 static Lisp_Object
@@ -619,12 +643,14 @@ get_cgcolor(unsigned long idx, struct frame *f)
     CGContextSetFillColorWithColor (context, refcol_) ;                 \
     CGColorRelease (refcol_);                                           \
   } while (0)
+
 #define CG_SET_FILL_COLOR_WITH_FACE_BACKGROUND(context, face, f)        \
   do {                                                                  \
     CGColorRef refcol_ = get_cgcolor (NS_FACE_BACKGROUND (face), f);    \
     CGContextSetFillColorWithColor (context, refcol_);                  \
     CGColorRelease (refcol_);                                           \
   } while (0)
+
 #define CG_SET_STROKE_COLOR_WITH_FACE_FOREGROUND(context, face, f)      \
   do {                                                                  \
     CGColorRef refcol_ = get_cgcolor (NS_FACE_FOREGROUND (face), f);    \
@@ -2905,18 +2931,22 @@ macfont_draw (struct glyph_string *s, int from, int to, int x, int y,
 #endif
   CGContextSaveGState (context);
 
-  if (!CGRectIsNull (background_rect))
-    {
-      if (s->hl == DRAW_MOUSE_FACE)
-        {
-          face = FACE_FROM_ID_OR_NULL (s->f,
-				       MOUSE_HL_INFO (s->f)->mouse_face_face_id);
-          if (!face)
-            face = FACE_FROM_ID (s->f, MOUSE_FACE_ID);
-        }
-      CG_SET_FILL_COLOR_WITH_FACE_BACKGROUND (context, face, f);
-      CGContextFillRects (context, &background_rect, 1);
+  if (!CGRectIsNull(background_rect)) {
+    if (s->hl == DRAW_MOUSE_FACE) {
+      face =
+          FACE_FROM_ID_OR_NULL(s->f, MOUSE_HL_INFO(s->f)->mouse_face_face_id);
+      if (!face)
+        face = FACE_FROM_ID(s->f, MOUSE_FACE_ID);
     }
+    // TODO changed this...
+    // CG_SET_FILL_COLOR_WITH_FACE_BACKGROUND (context, face, f);
+    // CGContextFillRects (context, &background_rect, 1);
+    const float transparency_factor = 0.4;
+    CGContextClearRect(context, background_rect);
+    clear_bg_rect([ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f) colorWithAlphaComponent:transparency_factor],
+                  context,
+                  &background_rect);
+  }
 
   if (macfont_info->cgfont)
     {
