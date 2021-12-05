@@ -80,19 +80,19 @@ static EmacsMenu *mainMenu;
 
 // ================================
 // MY EDIT: make color transparent function
-static const float transparency_factor = 0.4;
+// static const float transparency_factor = 0.4;
 static NSColor*
 transparent_background_ns_lookup_indexed_color(struct face* face, struct frame* f) {
       NSColor *base_color =
           ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f);
-      return [base_color colorWithAlphaComponent:transparency_factor];
+      return [base_color colorWithAlphaComponent:f->alpha_background];
 }
 
 static NSColor*
 transparent_foreground_ns_lookup_indexed_color(struct face* face, struct frame* f) {
       NSColor *base_color =
           ns_lookup_indexed_color(NS_FACE_FOREGROUND(face), f);
-      return [base_color colorWithAlphaComponent:transparency_factor];
+      return [base_color colorWithAlphaComponent:f->alpha_background];
 }
 
 // ================================
@@ -2638,7 +2638,7 @@ ns_clear_frame (struct frame *f)
 // 			    (FACE_FROM_ID (f, DEFAULT_FACE_ID)), f) set];
 
   NSColor* color_to_set = ns_lookup_indexed_color((NS_FACE_BACKGROUND(FACE_FROM_ID(f, DEFAULT_FACE_ID))), f);
-  NSColor* transparent_color = [color_to_set colorWithAlphaComponent:transparency_factor];
+  NSColor* transparent_color = [color_to_set colorWithAlphaComponent:f->alpha_background];
   [transparent_color set];
 
   NSRectFill (r);
@@ -3225,13 +3225,13 @@ ns_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
        last pixels differently.  */
     {
       // [ns_lookup_indexed_color(color_first, f) set];
-      [[ns_lookup_indexed_color(color_first, f) colorWithAlphaComponent:transparency_factor] set];
+      [[ns_lookup_indexed_color(color_first, f) colorWithAlphaComponent:f->alpha_background] set];
       NSRectFill(NSMakeRect (x0, y0, 1, y1 - y0));
       // [ns_lookup_indexed_color(color, f) set];
-      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:transparency_factor] set];
+      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:f->alpha_background] set];
       NSRectFill(NSMakeRect (x0 + 1, y0, x1 - x0 - 2, y1 - y0));
       // [ns_lookup_indexed_color(color_last, f) set];
-      [[ns_lookup_indexed_color(color_last, f) colorWithAlphaComponent:transparency_factor] set];
+      [[ns_lookup_indexed_color(color_last, f) colorWithAlphaComponent:f->alpha_background] set];
       NSRectFill(NSMakeRect (x1 - 1, y0, 1, y1 - y0));
     }
   else if ((x1 - x0 > y1 - y0) && (y1 - y0 >= 3))
@@ -3239,13 +3239,13 @@ ns_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
        last pixels differently.  */
     {
       // [ns_lookup_indexed_color(color_first, f) set];
-      [[ns_lookup_indexed_color(color_first, f) colorWithAlphaComponent:transparency_factor] set];
+      [[ns_lookup_indexed_color(color_first, f) colorWithAlphaComponent:f->alpha_background] set];
       NSRectFill(NSMakeRect (x0, y0, x1 - x0, 1));
       // [ns_lookup_indexed_color(color, f) set];
-      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:transparency_factor] set];
+      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:f->alpha_background] set];
       NSRectFill(NSMakeRect (x0, y0 + 1, x1 - x0, y1 - y0 - 2));
       // [ns_lookup_indexed_color(color_last, f) set];
-      [[ns_lookup_indexed_color(color_last, f) colorWithAlphaComponent:transparency_factor] set];
+      [[ns_lookup_indexed_color(color_last, f) colorWithAlphaComponent:f->alpha_background] set];
       NSRectFill(NSMakeRect (x0, y1 - 1, x1 - x0, 1));
     }
   else
@@ -3253,7 +3253,7 @@ ns_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
       /* In any other case do not draw the first and last pixels
          differently.  */
       // [ns_lookup_indexed_color(color, f) set];
-      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:transparency_factor] set];
+      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:f->alpha_background] set];
       NSRectFill(divider);
     }
 
@@ -3682,7 +3682,7 @@ ns_dumpglyphs_box_or_relief (struct glyph_string *s)
       //              ns_lookup_indexed_color (face->box_color, s->f),
       //              left_p, right_p);
       ns_draw_box (r, abs (hthickness), abs (vthickness),
-                   [ns_lookup_indexed_color (face->box_color, s->f) colorWithAlphaComponent:transparency_factor],
+                   [ns_lookup_indexed_color (face->box_color, s->f) colorWithAlphaComponent:s->f->alpha_background],
                    left_p, right_p);
     }
   else
@@ -3740,17 +3740,17 @@ ns_maybe_dumpglyphs_background (struct glyph_string *s, char force_p)
             // NSLog(@"%@", mystery_color);
             // [mystery_color set];
 
-            [[ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f) colorWithAlphaComponent:transparency_factor] set];
+            [[ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f) colorWithAlphaComponent:s->f->alpha_background] set];
           } else {
             // [FRAME_BACKGROUND_COLOR(s->f) set];
-            [[FRAME_BACKGROUND_COLOR(s->f) colorWithAlphaComponent:transparency_factor] set];
+            [[FRAME_BACKGROUND_COLOR(s->f) colorWithAlphaComponent:s->f->alpha_background] set];
           }
 
         } else {
           struct ns_display_info *dpyinfo = FRAME_DISPLAY_INFO(s->f);
           // [[dpyinfo->bitmaps[face->stipple-1].img stippleMask] set];
           [[[dpyinfo->bitmaps[face->stipple - 1].img stippleMask]
-              colorWithAlphaComponent:transparency_factor] set];
+              colorWithAlphaComponent:s->f->alpha_background] set];
         }
 
         if (s->hl != DRAW_CURSOR) {
@@ -3812,7 +3812,7 @@ ns_dumpglyphs_image (struct glyph_string *s, NSRect r)
   }
 
   // [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f) set];
-  [[ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f) colorWithAlphaComponent:transparency_factor] set];
+  [[ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f) colorWithAlphaComponent:s->f->alpha_background] set];
 
   if (bg_height > s->slice.height || s->img->hmargin || s->img->vmargin
       || s->img->mask || s->img->pixmap == 0 || s->width != s->background_width)
@@ -3969,7 +3969,7 @@ ns_dumpglyphs_stretch (struct glyph_string *s)
       glyphRect = NSMakeRect (s->x, s->y, s->background_width, s->height);
 
       // [bgCol set];
-      [[bgCol colorWithAlphaComponent:transparency_factor] set];
+      // [[bgCol colorWithAlphaComponent:transparency_factor] set];
 
       /* NOTE: under NS this is NOT used to draw cursors, but we must avoid
          overwriting cursor (usually when cursor on a tab) */
