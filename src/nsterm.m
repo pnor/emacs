@@ -78,6 +78,25 @@ static EmacsMenu *dockMenu;
 static EmacsMenu *mainMenu;
 #endif
 
+// ================================
+// MY EDIT: make color transparent function
+static const float transparency_factor = 0.4;
+static NSColor*
+transparent_background_ns_lookup_indexed_color(struct face* face, struct frame* f) {
+      NSColor *base_color =
+          ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f);
+      return [base_color colorWithAlphaComponent:transparency_factor];
+}
+
+static NSColor*
+transparent_foreground_ns_lookup_indexed_color(struct face* face, struct frame* f) {
+      NSColor *base_color =
+          ns_lookup_indexed_color(NS_FACE_FOREGROUND(face), f);
+      return [base_color colorWithAlphaComponent:transparency_factor];
+}
+
+// ================================
+
 /* ==========================================================================
 
    NSTRACE, Trace support.
@@ -2612,9 +2631,17 @@ ns_clear_frame (struct frame *f)
 
   block_input ();
   ns_focus (f, &r, 1);
-  [ns_lookup_indexed_color (NS_FACE_BACKGROUND
-			    (FACE_FROM_ID (f, DEFAULT_FACE_ID)), f) set];
+  // TODO hmm this didn't work; got to do more?
+//   [ns_lookup_indexed_color (NS_FACE_BACKGROUND
+// 			    (FACE_FROM_ID (f, DEFAULT_FACE_ID)), f) set];
+
+  NSColor* color_to_set = ns_lookup_indexed_color((NS_FACE_BACKGROUND(FACE_FROM_ID(f, DEFAULT_FACE_ID))), f);
+  NSColor* transparent_color = [color_to_set colorWithAlphaComponent:transparency_factor];
+  [transparent_color set];
+
   NSRectFill (r);
+  [[view window] setBackgroundColor:transparent_color]; // this does something
+
   ns_unfocus (f);
 
   /* as of 2006/11 or so this is now needed */
@@ -2642,7 +2669,8 @@ ns_clear_frame_area (struct frame *f, int x, int y, int width, int height)
 
   r = NSIntersectionRect (r, [view frame]);
   ns_focus (f, &r, 1);
-  [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) set];
+  // [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) set];
+  [transparent_background_ns_lookup_indexed_color(face, f) set];
 
   NSRectFill (r);
 
@@ -2745,7 +2773,8 @@ ns_clear_under_internal_border (struct frame *f)
         return;
 
       ns_focus (f, NULL, 1);
-      [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) set];
+      // [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) set];
+      [[ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) colorWithAlphaComponent:transparency_factor] set];
 
       NSRectFill (NSMakeRect (0, margin, width, border));
       NSRectFill (NSMakeRect (0, 0, border, height));
@@ -2797,8 +2826,10 @@ ns_after_update_window_line (struct window *w, struct glyph_row *desired_row)
           NSRect r = NSMakeRect (0, y, FRAME_PIXEL_WIDTH (f), height);
           ns_focus (f, &r, 1);
 
-          [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) set];
-          NSRectFill (NSMakeRect (0, y, width, height));
+          // [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), f) set];
+          [transparent_background_ns_lookup_indexed_color(face, f) set];
+
+          NSRectFill(NSMakeRect(0, y, width, height));
           NSRectFill (NSMakeRect (FRAME_PIXEL_WIDTH (f) - width,
                                   y, width, height));
 
@@ -2965,7 +2996,9 @@ ns_draw_fringe_bitmap (struct window *w, struct glyph_row *row,
     {
       NSTRACE_RECT ("clearRect", clearRect);
 
-      [ns_lookup_indexed_color(face->background, f) set];
+      // [ns_lookup_indexed_color(face->background, f) set];
+      [transparent_background_ns_lookup_indexed_color(face, f) set];
+
       NSRectFill (clearRect);
     }
 
@@ -3142,8 +3175,10 @@ ns_draw_vertical_window_border (struct window *w, int x, int y0, int y1)
   face = FACE_FROM_ID_OR_NULL (f, VERTICAL_BORDER_FACE_ID);
 
   ns_focus (f, &r, 1);
-  if (face)
-    [ns_lookup_indexed_color(face->foreground, f) set];
+  if (face) {
+    // [ns_lookup_indexed_color(face->foreground, f) set];
+    [transparent_foreground_ns_lookup_indexed_color(face, f) set];
+  }
 
   NSRectFill(r);
   ns_unfocus (f);
@@ -3179,29 +3214,36 @@ ns_draw_window_divider (struct window *w, int x0, int x1, int y0, int y1)
     /* A vertical divider, at least three pixels wide: Draw first and
        last pixels differently.  */
     {
-      [ns_lookup_indexed_color(color_first, f) set];
+      // [ns_lookup_indexed_color(color_first, f) set];
+      [[ns_lookup_indexed_color(color_first, f) colorWithAlphaComponent:transparency_factor] set];
       NSRectFill(NSMakeRect (x0, y0, 1, y1 - y0));
-      [ns_lookup_indexed_color(color, f) set];
+      // [ns_lookup_indexed_color(color, f) set];
+      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:transparency_factor] set];
       NSRectFill(NSMakeRect (x0 + 1, y0, x1 - x0 - 2, y1 - y0));
-      [ns_lookup_indexed_color(color_last, f) set];
+      // [ns_lookup_indexed_color(color_last, f) set];
+      [[ns_lookup_indexed_color(color_last, f) colorWithAlphaComponent:transparency_factor] set];
       NSRectFill(NSMakeRect (x1 - 1, y0, 1, y1 - y0));
     }
   else if ((x1 - x0 > y1 - y0) && (y1 - y0 >= 3))
     /* A horizontal divider, at least three pixels high: Draw first and
        last pixels differently.  */
     {
-      [ns_lookup_indexed_color(color_first, f) set];
+      // [ns_lookup_indexed_color(color_first, f) set];
+      [[ns_lookup_indexed_color(color_first, f) colorWithAlphaComponent:transparency_factor] set];
       NSRectFill(NSMakeRect (x0, y0, x1 - x0, 1));
-      [ns_lookup_indexed_color(color, f) set];
+      // [ns_lookup_indexed_color(color, f) set];
+      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:transparency_factor] set];
       NSRectFill(NSMakeRect (x0, y0 + 1, x1 - x0, y1 - y0 - 2));
-      [ns_lookup_indexed_color(color_last, f) set];
+      // [ns_lookup_indexed_color(color_last, f) set];
+      [[ns_lookup_indexed_color(color_last, f) colorWithAlphaComponent:transparency_factor] set];
       NSRectFill(NSMakeRect (x0, y1 - 1, x1 - x0, 1));
     }
   else
     {
       /* In any other case do not draw the first and last pixels
          differently.  */
-      [ns_lookup_indexed_color(color, f) set];
+      // [ns_lookup_indexed_color(color, f) set];
+      [[ns_lookup_indexed_color(color, f) colorWithAlphaComponent:transparency_factor] set];
       NSRectFill(divider);
     }
 
@@ -3626,8 +3668,11 @@ ns_dumpglyphs_box_or_relief (struct glyph_string *s)
   /* TODO: Sometimes box_color is 0 and this seems wrong; should investigate.  */
   if (s->face->box == FACE_SIMPLE_BOX && s->face->box_color)
     {
+      // ns_draw_box (r, abs (hthickness), abs (vthickness),
+      //              ns_lookup_indexed_color (face->box_color, s->f),
+      //              left_p, right_p);
       ns_draw_box (r, abs (hthickness), abs (vthickness),
-                   ns_lookup_indexed_color (face->box_color, s->f),
+                   [ns_lookup_indexed_color (face->box_color, s->f) colorWithAlphaComponent:transparency_factor],
                    left_p, right_p);
     }
   else
@@ -3651,45 +3696,62 @@ ns_maybe_dumpglyphs_background (struct glyph_string *s, char force_p)
   if (!s->background_filled_p/* || s->hl == DRAW_MOUSE_FACE*/)
     {
       int box_line_width = max (s->face->box_horizontal_line_width, 0);
-      if (FONT_HEIGHT (s->font) < s->height - 2 * box_line_width
-	  /* When xdisp.c ignores FONT_HEIGHT, we cannot trust font
-	     dimensions, since the actual glyphs might be much
-	     smaller.  So in that case we always clear the rectangle
-	     with background color.  */
-	  || FONT_TOO_HIGH (s->font)
-          || s->font_not_found_p || s->extends_to_end_of_line_p || force_p)
-	{
-          struct face *face;
-          if (s->hl == DRAW_MOUSE_FACE)
-            {
-              face
-		= FACE_FROM_ID_OR_NULL (s->f,
-					MOUSE_HL_INFO (s->f)->mouse_face_face_id);
-              if (!face)
-                face = FACE_FROM_ID (s->f, MOUSE_FACE_ID);
-            }
-          else
-            face = FACE_FROM_ID (s->f, s->first_glyph->face_id);
-          if (!face->stipple)
-            [(NS_FACE_BACKGROUND (face) != 0
-              ? ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f)
-              : FRAME_BACKGROUND_COLOR (s->f)) set];
-          else
-            {
-              struct ns_display_info *dpyinfo = FRAME_DISPLAY_INFO (s->f);
-              [[dpyinfo->bitmaps[face->stipple-1].img stippleMask] set];
-            }
+      if (FONT_HEIGHT(s->font) < s->height - 2 * box_line_width
+          /* When xdisp.c ignores FONT_HEIGHT, we cannot trust font
+             dimensions, since the actual glyphs might be much
+             smaller.  So in that case we always clear the rectangle
+             with background color.  */
+          || FONT_TOO_HIGH(s->font) || s->font_not_found_p ||
+          s->extends_to_end_of_line_p || force_p) {
+        struct face *face;
+        if (s->hl == DRAW_MOUSE_FACE) {
+          // TODO THIS is the issue, this face
+          face = FACE_FROM_ID_OR_NULL(s->f,
+                                      MOUSE_HL_INFO(s->f)->mouse_face_face_id);
+          if (!face)
+            face = FACE_FROM_ID(s->f, MOUSE_FACE_ID);
+        } else {
+          face = FACE_FROM_ID(s->f, s->first_glyph->face_id);
+        }
 
-          if (s->hl != DRAW_CURSOR)
-            {
-              NSRect r = NSMakeRect (s->x, s->y + box_line_width,
-                                    s->background_width,
-                                    s->height-2*box_line_width);
-              NSRectFill (r);
-            }
+        if (!face->stipple) {
+          // [(NS_FACE_BACKGROUND(face) != 0
+          //       ? ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f)
+          //       : FRAME_BACKGROUND_COLOR(s->f)) set];
 
-	  s->background_filled_p = 1;
-	}
+          if (NS_FACE_BACKGROUND(face) != 0) {
+          // ! Affects whether modeline is transparent
+          // TODO error is here though/ modeline and whatever face affects
+          // background are linked
+
+            // For now, just make it transparent
+
+            // NSColor* mystery_color = ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f);
+            // NSLog(@"%@", mystery_color);
+            // [mystery_color set];
+
+            [[ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), s->f) colorWithAlphaComponent:transparency_factor] set];
+          } else {
+            // [FRAME_BACKGROUND_COLOR(s->f) set];
+            [[FRAME_BACKGROUND_COLOR(s->f) colorWithAlphaComponent:transparency_factor] set];
+          }
+
+        } else {
+          struct ns_display_info *dpyinfo = FRAME_DISPLAY_INFO(s->f);
+          // [[dpyinfo->bitmaps[face->stipple-1].img stippleMask] set];
+          [[[dpyinfo->bitmaps[face->stipple - 1].img stippleMask]
+              colorWithAlphaComponent:transparency_factor] set];
+        }
+
+        if (s->hl != DRAW_CURSOR) {
+          NSRect r =
+              NSMakeRect(s->x, s->y + box_line_width, s->background_width,
+                         s->height - 2 * box_line_width);
+          NSRectFill(r);
+        }
+
+        s->background_filled_p = 1;
+      }
     }
 }
 
@@ -3735,10 +3797,12 @@ ns_dumpglyphs_image (struct glyph_string *s, NSRect r)
       if (!face)
        face = FACE_FROM_ID (s->f, MOUSE_FACE_ID);
     }
-  else
+  else {
     face = FACE_FROM_ID (s->f, s->first_glyph->face_id);
+  }
 
-  [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f) set];
+  // [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f) set];
+  [[ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f) colorWithAlphaComponent:transparency_factor] set];
 
   if (bg_height > s->slice.height || s->img->hmargin || s->img->vmargin
       || s->img->mask || s->img->pixmap == 0 || s->width != s->background_width)
@@ -3894,7 +3958,8 @@ ns_dumpglyphs_stretch (struct glyph_string *s)
 
       glyphRect = NSMakeRect (s->x, s->y, s->background_width, s->height);
 
-      [bgCol set];
+      // [bgCol set];
+      [[bgCol colorWithAlphaComponent:transparency_factor] set];
 
       /* NOTE: under NS this is NOT used to draw cursors, but we must avoid
          overwriting cursor (usually when cursor on a tab) */
@@ -4064,30 +4129,27 @@ ns_draw_glyph_string (struct glyph_string *s)
 
   NSTRACE_WHEN (NSTRACE_GROUP_GLYPHS, "ns_draw_glyph_string");
 
-  if (s->next && s->right_overhang && !s->for_overlaps/*&&s->hl!=DRAW_CURSOR*/)
-    {
-      int width;
-      struct glyph_string *next;
+  if (s->next && s->right_overhang &&
+      !s->for_overlaps /*&&s->hl!=DRAW_CURSOR*/) {
+    int width;
+    struct glyph_string *next;
 
-      for (width = 0, next = s->next;
-	   next && width < s->right_overhang;
-	   width += next->width, next = next->next)
-	if (next->first_glyph->type != IMAGE_GLYPH)
-          {
-            if (next->first_glyph->type != STRETCH_GLYPH)
-              {
-                n = ns_get_glyph_string_clip_rect (s->next, r);
-                ns_focus (s->f, r, n);
-                ns_maybe_dumpglyphs_background (s->next, 1);
-                ns_unfocus (s->f);
-              }
-            else
-              {
-                ns_dumpglyphs_stretch (s->next);
-              }
-            next->num_clips = 0;
-          }
+    for (width = 0, next = s->next; next && width < s->right_overhang;
+         width += next->width, next = next->next) {
+      if (next->first_glyph->type != IMAGE_GLYPH) {
+        if (next->first_glyph->type != STRETCH_GLYPH) {
+          n = ns_get_glyph_string_clip_rect(s->next, r);
+          ns_focus(s->f, r, n);
+          // TODO this func is the issue
+          ns_maybe_dumpglyphs_background(s->next, 1);
+          ns_unfocus(s->f);
+        } else {
+          ns_dumpglyphs_stretch(s->next);
+        }
+        next->num_clips = 0;
+      }
     }
+  }
 
   if (!s->for_overlaps && s->face->box != FACE_NO_BOX
         && (s->first_glyph->type == CHAR_GLYPH
@@ -4124,12 +4186,13 @@ ns_draw_glyph_string (struct glyph_string *s)
       n = ns_get_glyph_string_clip_rect (s, r);
       ns_focus (s->f, r, n);
 
-      if (s->for_overlaps || (s->cmp_from > 0
-			      && ! s->first_glyph->u.cmp.automatic))
+      if (s->for_overlaps ||
+          (s->cmp_from > 0 && !s->first_glyph->u.cmp.automatic)) {
         s->background_filled_p = 1;
-      else
-        ns_maybe_dumpglyphs_background
-          (s, s->first_glyph->type == COMPOSITE_GLYPH);
+      } else {
+        ns_maybe_dumpglyphs_background(s,
+                                       s->first_glyph->type == COMPOSITE_GLYPH);
+      }
 
       if (s->hl == DRAW_CURSOR && s->w->phys_cursor_type == FILLED_BOX_CURSOR)
         {
@@ -4141,10 +4204,11 @@ ns_draw_glyph_string (struct glyph_string *s)
       {
         BOOL isComposite = s->first_glyph->type == COMPOSITE_GLYPH;
 
-        if (isComposite)
+        if (isComposite) {
           ns_draw_composite_glyph_string_foreground (s);
-        else
+        } else {
           ns_draw_glyph_string_foreground (s);
+        }
       }
 
       {
@@ -4153,6 +4217,7 @@ ns_draw_glyph_string (struct glyph_string *s)
                                                    s->f)
                         : FRAME_FOREGROUND_COLOR (s->f));
         [col set];
+        // [[col colorWithAlphaComponent:transparency_factor] set];
 
         /* Draw underline, overline, strike-through. */
         ns_draw_text_decoration (s, s->face, col, s->width, s->x);
