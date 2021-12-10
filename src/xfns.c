@@ -7949,6 +7949,7 @@ frame_parm_handler x_frame_parm_handlers[] = {
   gui_set_fullscreen,
   gui_set_font_backend,
   gui_set_alpha,
+  gui_set_alpha_background,
   x_set_sticky,
   x_set_tool_bar_position,
   x_set_inhibit_double_buffering,
@@ -7960,7 +7961,6 @@ frame_parm_handler x_frame_parm_handlers[] = {
   x_set_z_group,
   x_set_override_redirect,
   gui_set_no_special_glyphs,
-  gui_set_alpha_background,
 };
 
 void

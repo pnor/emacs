@@ -3884,6 +3884,7 @@ static const struct frame_parm_table frame_parms[] =
   {"fullscreen",                SYMBOL_INDEX (Qfullscreen)},
   {"font-backend",		SYMBOL_INDEX (Qfont_backend)},
   {"alpha",			SYMBOL_INDEX (Qalpha)},
+  {"alpha-background",          SYMBOL_INDEX (Qalpha_background)},
   {"sticky",			SYMBOL_INDEX (Qsticky)},
   {"tool-bar-position",		SYMBOL_INDEX (Qtool_bar_position)},
   {"inhibit-double-buffering",  SYMBOL_INDEX (Qinhibit_double_buffering)},
@@ -3895,7 +3896,6 @@ static const struct frame_parm_table frame_parms[] =
   {"z-group",			SYMBOL_INDEX (Qz_group)},
   {"override-redirect",		SYMBOL_INDEX (Qoverride_redirect)},
   {"no-special-glyphs",		SYMBOL_INDEX (Qno_special_glyphs)},
-  {"alpha-background", SYMBOL_INDEX (Qalpha_background)},
 #ifdef NS_IMPL_COCOA
   {"ns-appearance",		SYMBOL_INDEX (Qns_appearance)},
   {"ns-transparent-titlebar",	SYMBOL_INDEX (Qns_transparent_titlebar)},
@@ -4095,6 +4095,8 @@ frame_float (struct frame *f, Lisp_Object val, enum frame_float_type what,
 void
 gui_set_frame_parameters (struct frame *f, Lisp_Object alist)
 {
+  printf("gui set frame parameters called\n");
+  // TODO this not calling my func
   Lisp_Object tail, frame;
 
   /* Neither of these values should be used.  */
@@ -4227,6 +4229,7 @@ gui_set_frame_parameters (struct frame *f, Lisp_Object alist)
 	  store_frame_param (f, prop, val);
 
 	  param_index = Fget (prop, Qx_frame_parameter);
+
 	  if (FIXNATP (param_index)
 	      && XFIXNAT (param_index) < ARRAYELTS (frame_parms)
 	      && FRAME_RIF (f)->frame_parm_handlers[XFIXNUM (param_index)])
@@ -4966,6 +4969,7 @@ gui_set_scroll_bar_height (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
 void
 gui_set_alpha (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
 {
+  printf("setting gui alpha...\n");
   double alpha = 1.0;
   double newval[2];
   int i;
@@ -5017,6 +5021,7 @@ void
 gui_set_alpha_background (struct frame *f, Lisp_Object arg,
 			  Lisp_Object oldval)
 {
+  printf("gui_set_alpha_background called!\n");
   double alpha = 1.0;
 
   if (NILP (arg))
@@ -5037,6 +5042,8 @@ gui_set_alpha_background (struct frame *f, Lisp_Object arg,
     }
   else
     wrong_type_argument (Qnumberp, arg);
+
+  printf("new alpha = %f \n", alpha);
 
   f->alpha_background = alpha;
 

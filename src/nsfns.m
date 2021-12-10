@@ -1003,6 +1003,7 @@ frame_parm_handler ns_frame_parm_handlers[] =
   gui_set_fullscreen, /* generic OK */
   gui_set_font_backend, /* generic OK */
   gui_set_alpha,
+  gui_set_alpha_background,
   0, /* x_set_sticky */
   0, /* x_set_tool_bar_position */
   0, /* x_set_inhibit_double_buffering */
