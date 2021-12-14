@@ -1437,6 +1437,8 @@ DEFUN ("x-create-frame", Fx_create_frame, Sx_create_frame,
                          RES_TYPE_NUMBER);
   gui_default_parameter (f, parms, Qalpha, Qnil,
                          "alpha", "Alpha", RES_TYPE_NUMBER);
+  gui_default_parameter (f, parms, Qalpha_background, make_fixnum(100),
+                         "alphaBackground", "AlphaBackground", RES_TYPE_NUMBER);
   gui_default_parameter (f, parms, Qfullscreen, Qnil,
                          "fullscreen", "Fullscreen", RES_TYPE_SYMBOL);
 

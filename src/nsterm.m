@@ -33,11 +33,11 @@ GNUstep port and post-20 update by Adrian Robert (arobert@cogsci.ucsd.edu)
 #include <fcntl.h>
 #include <math.h>
 #include <pthread.h>
+#include <signal.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <time.h>
-#include <signal.h>
 #include <unistd.h>
-#include <stdbool.h>
 
 #include <c-ctype.h>
 #include <c-strcase.h>
@@ -80,7 +80,6 @@ static EmacsMenu *mainMenu;
 
 // ================================
 // MY EDIT: make color transparent function
-// static const float transparency_factor = 0.4;
 static NSColor *transparent_background_ns_lookup_indexed_color(struct face *face, struct frame *f) {
   NSColor *base_color = ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f);
   return [base_color colorWithAlphaComponent:f->alpha_background];
@@ -2388,7 +2387,6 @@ void ns_clear_frame(struct frame *f)
       ns_lookup_indexed_color((NS_FACE_BACKGROUND(FACE_FROM_ID(f, DEFAULT_FACE_ID))), f);
   NSColor *transparent_color = [color_to_set colorWithAlphaComponent:f->alpha_background];
   [transparent_color set];
-  printf("alpha background: %f \n", f->alpha_background);
 
   NSRectFill(r);
   [[view window] setBackgroundColor:transparent_color]; // this does something
@@ -3550,9 +3548,6 @@ static void ns_dumpglyphs_stretch(struct glyph_string *s) {
 
     glyphRect = NSMakeRect(s->x, s->y, s->background_width, s->height);
 
-    // [bgCol set];
-    // [[bgCol colorWithAlphaComponent:transparency_factor] set];
-
     /* NOTE: under NS this is NOT used to draw cursors, but we must avoid
        overwriting cursor (usually when cursor on a tab) */
     if (s->hl == DRAW_CURSOR) {
@@ -3777,7 +3772,6 @@ static void ns_draw_glyph_string(struct glyph_string *s)
                           ? ns_lookup_indexed_color(NS_FACE_FOREGROUND(s->face), s->f)
                           : FRAME_FOREGROUND_COLOR(s->f));
       [col set];
-      // [[col colorWithAlphaComponent:transparency_factor] set];
 
       /* Draw underline, overline, strike-through. */
       ns_draw_text_decoration(s, s->face, col, s->width, s->x);
@@ -4502,7 +4496,8 @@ static struct redisplay_interface ns_redisplay_interface = {
     ns_hide_hourglass,
     ns_default_font_parameter};
 
-static void ns_delete_display(struct ns_display_info *dpyinfo) { /* TODO...  */ }
+static void ns_delete_display(struct ns_display_info *dpyinfo) { /* TODO...  */
+}
 
 /* This function is called when the last frame on a display is deleted.  */
 static void ns_delete_terminal(struct terminal *terminal) {

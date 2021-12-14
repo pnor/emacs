@@ -4095,8 +4095,6 @@ frame_float (struct frame *f, Lisp_Object val, enum frame_float_type what,
 void
 gui_set_frame_parameters (struct frame *f, Lisp_Object alist)
 {
-  printf("gui set frame parameters called\n");
-  // TODO this not calling my func
   Lisp_Object tail, frame;
 
   /* Neither of these values should be used.  */
@@ -4969,7 +4967,6 @@ gui_set_scroll_bar_height (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
 void
 gui_set_alpha (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
 {
-  printf("setting gui alpha...\n");
   double alpha = 1.0;
   double newval[2];
   int i;
@@ -5021,7 +5018,6 @@ void
 gui_set_alpha_background (struct frame *f, Lisp_Object arg,
 			  Lisp_Object oldval)
 {
-  printf("gui_set_alpha_background called!\n");
   double alpha = 1.0;
 
   if (NILP (arg))
@@ -5029,7 +5025,6 @@ gui_set_alpha_background (struct frame *f, Lisp_Object arg,
   else if (FLOATP (arg))
     {
       alpha = XFLOAT_DATA (arg);
-      printf ("Setting alpha background with arg \n");
       if (!(0 <= alpha && alpha <= 1.0))
 	args_out_of_range (make_float (0.0), make_float (1.0));
     }
@@ -5042,8 +5037,6 @@ gui_set_alpha_background (struct frame *f, Lisp_Object arg,
     }
   else
     wrong_type_argument (Qnumberp, arg);
-
-  printf("new alpha = %f \n", alpha);
 
   f->alpha_background = alpha;
 
