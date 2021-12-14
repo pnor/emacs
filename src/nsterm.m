@@ -2041,6 +2041,37 @@ static void ns_set_frame_alpha(struct frame *f)
   }
 }
 
+static void ns_set_frame_alpha_background(struct frame *f)
+/* --------------------------------------------------------------------------
+     change the frame background transparency
+   -------------------------------------------------------------------------- */
+{
+  struct ns_display_info *dpyinfo = FRAME_DISPLAY_INFO(f);
+  double alpha = 1.0;
+
+  NSTRACE("ns_set_frame_alpha_background");
+
+  alpha = f->alpha_background;
+
+  if (alpha < 0.0)
+    return;
+  else if (1.0 < alpha)
+    alpha = 1.0;
+
+  {
+    EmacsView *view = FRAME_NS_VIEW(f);
+
+    NSColor *color_to_set =
+      ns_lookup_indexed_color((NS_FACE_BACKGROUND(FACE_FROM_ID(f, DEFAULT_FACE_ID))), f);
+    NSColor *transparent_color = [color_to_set colorWithAlphaComponent:f->alpha_background];
+    [transparent_color set];
+
+    [[view window] setBackgroundColor:transparent_color];
+    printf("just got done setting bg to transparent\n");
+    [[view window] displayIfNeeded];
+  }
+}
+
 /* ==========================================================================
 
     Mouse handling
@@ -4558,6 +4589,7 @@ static struct terminal *ns_create_terminal(struct ns_display_info *dpyinfo)
   terminal->set_window_size_hook = ns_set_window_size;
   terminal->set_frame_offset_hook = ns_set_offset;
   terminal->set_frame_alpha_hook = ns_set_frame_alpha;
+  terminal->set_frame_alpha_background_hook = ns_set_frame_alpha_background;
   terminal->set_new_font_hook = ns_new_font;
   terminal->implicit_set_name_hook = ns_implicitly_set_name;
   terminal->menu_show_hook = ns_menu_show;

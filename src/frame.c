@@ -5040,6 +5040,13 @@ gui_set_alpha_background (struct frame *f, Lisp_Object arg,
 
   f->alpha_background = alpha;
 
+  if (FRAME_TERMINAL (f)->set_frame_alpha_background_hook)
+    {
+      block_input ();
+      FRAME_TERMINAL (f)->set_frame_alpha_background_hook (f);
+      unblock_input ();
+    }
+
   SET_FRAME_GARBAGED (f);
 }
 
