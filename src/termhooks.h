@@ -603,6 +603,9 @@ struct terminal
   /* This hook is called to set the frame's transparency.  */
   void (*set_frame_alpha_hook) (struct frame *f);
 
+  /* This hook is called to set the frame's background transparency.  */
+  void (*set_frame_alpha_background_hook) (struct frame *f);
+
   /* This hook is called to set a new font for the frame.  */
   Lisp_Object (*set_new_font_hook) (struct frame *f, Lisp_Object font_object,
                                     int fontset);

@@ -3887,6 +3887,7 @@ static const struct frame_parm_table frame_parms[] =
   {"fullscreen",                SYMBOL_INDEX (Qfullscreen)},
   {"font-backend",		SYMBOL_INDEX (Qfont_backend)},
   {"alpha",			SYMBOL_INDEX (Qalpha)},
+  {"alpha-background",          SYMBOL_INDEX (Qalpha_background)},
   {"sticky",			SYMBOL_INDEX (Qsticky)},
   {"tool-bar-position",		SYMBOL_INDEX (Qtool_bar_position)},
   {"inhibit-double-buffering",  SYMBOL_INDEX (Qinhibit_double_buffering)},
@@ -4229,6 +4230,7 @@ gui_set_frame_parameters (struct frame *f, Lisp_Object alist)
 	  store_frame_param (f, prop, val);
 
 	  param_index = Fget (prop, Qx_frame_parameter);
+
 	  if (FIXNATP (param_index)
 	      && XFIXNAT (param_index) < ARRAYELTS (frame_parms)
 	      && FRAME_RIF (f)->frame_parm_handlers[XFIXNUM (param_index)])
@@ -5015,6 +5017,41 @@ gui_set_alpha (struct frame *f, Lisp_Object arg, Lisp_Object oldval)
     }
 }
 
+void
+gui_set_alpha_background (struct frame *f, Lisp_Object arg,
+			  Lisp_Object oldval)
+{
+  double alpha = 1.0;
+
+  if (NILP (arg))
+    alpha = 1.0;
+  else if (FLOATP (arg))
+    {
+      alpha = XFLOAT_DATA (arg);
+      if (!(0 <= alpha && alpha <= 1.0))
+	args_out_of_range (make_float (0.0), make_float (1.0));
+    }
+  else if (FIXNUMP (arg))
+    {
+      EMACS_INT ialpha = XFIXNUM (arg);
+      if (!(0 <= ialpha && ialpha <= 100))
+	args_out_of_range (make_fixnum (0), make_fixnum (100));
+      alpha = ialpha / 100.0;
+    }
+  else
+    wrong_type_argument (Qnumberp, arg);
+
+  f->alpha_background = alpha;
+
+  if (FRAME_TERMINAL (f)->set_frame_alpha_background_hook)
+    {
+      block_input ();
+      FRAME_TERMINAL (f)->set_frame_alpha_background_hook (f);
+      unblock_input ();
+    }
+
+  SET_FRAME_GARBAGED (f);
+}
 
 /**
  * gui_set_no_special_glyphs:
@@ -6083,6 +6120,7 @@ syms_of_frame (void)
 #endif
 
   DEFSYM (Qalpha, "alpha");
+  DEFSYM (Qalpha_background, "alpha-background");
   DEFSYM (Qauto_lower, "auto-lower");
   DEFSYM (Qauto_raise, "auto-raise");
   DEFSYM (Qborder_color, "border-color");

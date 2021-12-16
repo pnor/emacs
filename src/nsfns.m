@@ -1003,6 +1003,7 @@ frame_parm_handler ns_frame_parm_handlers[] =
   gui_set_fullscreen, /* generic OK */
   gui_set_font_backend, /* generic OK */
   gui_set_alpha,
+  gui_set_alpha_background,
   0, /* x_set_sticky */
   0, /* x_set_tool_bar_position */
   0, /* x_set_inhibit_double_buffering */
@@ -1446,6 +1447,8 @@ DEFUN ("x-create-frame", Fx_create_frame, Sx_create_frame,
                          RES_TYPE_NUMBER);
   gui_default_parameter (f, parms, Qalpha, Qnil,
                          "alpha", "Alpha", RES_TYPE_NUMBER);
+  gui_default_parameter (f, parms, Qalpha_background, make_fixnum(100),
+                         "alphaBackground", "AlphaBackground", RES_TYPE_NUMBER);
   gui_default_parameter (f, parms, Qfullscreen, Qnil,
                          "fullscreen", "Fullscreen", RES_TYPE_SYMBOL);
 
