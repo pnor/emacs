@@ -2528,11 +2528,14 @@ static int macfont_draw(struct glyph_string *s, int from, int to, int x, int y,
       CGColorRef colorref = get_cgcolor_from_nscolor (FRAME_CURSOR_COLOR (f), f);
       CGContextSetFillColorWithColor (context, colorref);
       CGColorRelease (colorref);
+
+      CGContextFillRects(context, &background_rect, 1);
+    } else {
+      NSColor* face_bg_color = ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f);
+      CGContextClearRect(context, background_rect);
+      clear_bg_rect([face_bg_color colorWithAlphaComponent:f->alpha_background],
+                    context, &background_rect);
     }
-    NSColor* face_bg_color = ns_lookup_indexed_color(NS_FACE_BACKGROUND(face), f);
-    CGContextClearRect(context, background_rect);
-    clear_bg_rect([face_bg_color colorWithAlphaComponent:f->alpha_background],
-                  context, &background_rect);
   }
 
   if (macfont_info->cgfont)

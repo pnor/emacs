@@ -3550,7 +3550,7 @@ ns_dumpglyphs_stretch (struct glyph_string *s)
       face = s->face;
 
       bgCol = ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f);
-      // bgCol = [bgCol colorWithAlphaComponent:s->f->alpha_background];
+      bgCol = [bgCol colorWithAlphaComponent:s->f->alpha_background];
       fgCol = ns_lookup_indexed_color (NS_FACE_FOREGROUND (face), s->f);
 
       if (s->hl == DRAW_CURSOR)
