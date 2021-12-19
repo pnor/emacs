@@ -3774,7 +3774,9 @@ ns_dumpglyphs_image (struct glyph_string *s, NSRect r)
      otherwise, since we composite the image under NS (instead of mucking
      with its background color), we must clear just the image area.  */
 
-  [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f) set];
+  NSColor* face_bg_col = ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f);
+  [[face_bg_col colorWithAlphaComponent:s->f->alpha_background] set];
+  // [ns_lookup_indexed_color (NS_FACE_BACKGROUND (face), s->f) set];
 
   if (bg_height > s->slice.height || s->img->hmargin || s->img->vmargin
       || s->img->mask || s->img->pixmap == 0 || s->width != s->background_width)
