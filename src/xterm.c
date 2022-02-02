@@ -671,9 +671,12 @@ x_set_cr_source_with_gc_foreground (struct frame *f, GC gc)
 
   XGetGCValues (FRAME_X_DISPLAY (f), gc, GCForeground, &xgcv);
   color.pixel = xgcv.foreground;
+
   x_query_colors (f, &color, 1);
-  cairo_set_source_rgb (FRAME_CR_CONTEXT (f), color.red / 65535.0,
-			color.green / 65535.0, color.blue / 65535.0);
+  cairo_set_source_rgba (FRAME_CR_CONTEXT (f), color.red / 65535.0,
+                         color.green / 65535.0, color.blue / 65535.0, f->alpha_background);
+
+  cairo_set_operator (FRAME_CR_CONTEXT (f), CAIRO_OPERATOR_SOURCE);
 }
 
 void
@@ -1097,6 +1100,55 @@ x_fill_rectangle (struct frame *f, GC gc, int x, int y, int width, int height)
 }
 
 static void
+x_clear_rectangle (struct frame *f, GC gc, int x, int y, int width, int height)
+{
+  Display *dpy = FRAME_X_DISPLAY (f);
+#ifdef USE_CAIRO
+  cairo_t *cr;
+  XGCValues xgcv;
+
+  cr = x_begin_cr_clip (f, gc);
+  XGetGCValues (dpy, gc, GCFillStyle | GCStipple, &xgcv);
+  if (xgcv.fill_style == FillSolid
+      /* Invalid resource ID (one or more of the three most
+	 significant bits set to 1) is obtained if the GCStipple
+	 component has never been explicitly set.  It should be
+	 regarded as Pixmap of unspecified size filled with ones.  */
+      || (xgcv.stipple & ((Pixmap) 7 << (sizeof (Pixmap) * CHAR_BIT - 3))))
+    {
+      x_set_cr_source_with_gc_background (f, gc);
+      cairo_rectangle (cr, x, y, width, height);
+      cairo_fill (cr);
+    }
+  else
+    {
+      eassert (xgcv.fill_style == FillOpaqueStippled);
+      eassert (xgcv.stipple != None);
+      x_set_cr_source_with_gc_background (f, gc);
+      cairo_rectangle (cr, x, y, width, height);
+      cairo_fill_preserve (cr);
+
+      cairo_pattern_t *pattern = x_bitmap_stipple (f, xgcv.stipple);
+      if (pattern)
+	{
+	  x_set_cr_source_with_gc_background (f, gc);
+	  cairo_clip (cr);
+	  cairo_mask (cr, pattern);
+	}
+    }
+  x_end_cr_clip (f);
+#else
+  XGCValues xgcv;
+  XGetGCValues (dpy, gc, GCForeground | GCBackground, &xgcv);
+  XSetForeground (dpy, gc, argb_from_rgb(xgcv.background, f->alpha_background));
+  XFillRectangle (FRAME_X_DISPLAY (f), FRAME_X_DRAWABLE (f),
+		  gc, x, y, width, height);
+
+  XSetForeground (dpy, gc, xgcv.foreground);
+#endif
+}
+
+static void
 x_draw_rectangle (struct frame *f, GC gc, int x, int y, int width, int height)
 {
 #ifdef USE_CAIRO
@@ -1315,6 +1367,88 @@ x_set_frame_alpha (struct frame *f)
     {
       parent = x_find_topmost_parent (f);
       if (parent != None)
+	XChangeProperty (dpy, parent, dpyinfo->Xatom_net_wm_window_opacity,
+			 XA_CARDINAL, 32, PropModeReplace,
+			 (unsigned char *) &opac, 1);
+    }
+
+  /* return unless necessary */
+  {
+    unsigned char *data;
+    Atom actual;
+    int rc, format;
+    unsigned long n, left;
+
+    rc = XGetWindowProperty (dpy, win, dpyinfo->Xatom_net_wm_window_opacity,
+			     0, 1, False, XA_CARDINAL,
+			     &actual, &format, &n, &left,
+			     &data);
+
+    if (rc == Success && actual != None)
+      {
+        unsigned long value = *(unsigned long *)data;
+	XFree (data);
+	if (value == opac)
+	  {
+	    x_uncatch_errors ();
+	    return;
+	  }
+      }
+  }
+
+  XChangeProperty (dpy, win, dpyinfo->Xatom_net_wm_window_opacity,
+		   XA_CARDINAL, 32, PropModeReplace,
+		   (unsigned char *) &opac, 1);
+  x_uncatch_errors ();
+}
+
+static void x_set_frame_alpha_background (struct frame *f)
+/* --------------------------------------------------------------------------
+     change the frame background transparency
+   -------------------------------------------------------------------------- */
+{
+  struct x_display_info *dpyinfo = FRAME_DISPLAY_INFO (f);
+  Display *dpy = FRAME_X_DISPLAY (f);
+  Window win = FRAME_OUTER_WINDOW (f);
+  double alpha = 1.0;
+  double alpha_min = 1.0;
+  unsigned long opac;
+  Window parent;
+
+  if (dpyinfo->highlight_frame == f)
+    alpha = f->alpha[0];
+  else
+    alpha = f->alpha[1];
+
+  if (alpha < 0.0)
+    return;
+
+  if (FLOATP (Vframe_alpha_lower_limit))
+    alpha_min = XFLOAT_DATA (Vframe_alpha_lower_limit);
+  else if (FIXNUMP (Vframe_alpha_lower_limit))
+    alpha_min = (XFIXNUM (Vframe_alpha_lower_limit)) / 100.0;
+
+  if (alpha > 1.0)
+    alpha = 1.0;
+  else if (alpha < alpha_min && alpha_min <= 1.0)
+    alpha = alpha_min;
+
+  opac = alpha * OPAQUE;
+
+  x_catch_errors (dpy);
+
+  /* If there is a parent from the window manager, put the property there
+     also, to work around broken window managers that fail to do that.
+     Do this unconditionally as this function is called on reparent when
+     alpha has not changed on the frame.  */
+
+  if (!FRAME_PARENT_FRAME (f))
+    {
+      parent = x_find_topmost_parent (f);
+      if (parent != None)
+	// XChangeProperty (dpy, parent, dpyinfo->Xatom_net_wm_window_opacity,
+	// 		 XA_CARDINAL, 32, PropModeReplace,
+	// 		 (unsigned char *) &opac, 1);
 	XChangeProperty (dpy, parent, dpyinfo->Xatom_net_wm_window_opacity,
 			 XA_CARDINAL, 32, PropModeReplace,
 			 (unsigned char *) &opac, 1);
@@ -1975,12 +2109,7 @@ x_compute_glyph_string_overhangs (struct glyph_string *s)
 static void
 x_clear_glyph_string_rect (struct glyph_string *s, int x, int y, int w, int h)
 {
-  Display *display = FRAME_X_DISPLAY (s->f);
-  XGCValues xgcv;
-  XGetGCValues (display, s->gc, GCForeground | GCBackground, &xgcv);
-  XSetForeground (display, s->gc, xgcv.background);
-  x_fill_rectangle (s->f, s->gc, x, y, w, h);
-  XSetForeground (display, s->gc, xgcv.foreground);
+  x_clear_rectangle(s->f, s->gc, x, y, w, h);
 }
 
 
@@ -14953,6 +15082,7 @@ x_create_terminal (struct x_display_info *dpyinfo)
   terminal->set_window_size_hook = x_set_window_size;
   terminal->set_frame_offset_hook = x_set_offset;
   terminal->set_frame_alpha_hook = x_set_frame_alpha;
+  terminal->set_frame_alpha_background_hook = x_set_frame_alpha_background;
   terminal->set_new_font_hook = x_new_font;
   terminal->set_bitmap_icon_hook = x_bitmap_icon;
   terminal->implicit_set_name_hook = x_implicitly_set_name;
