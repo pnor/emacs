@@ -2733,7 +2733,7 @@ x_create_x_image_and_pixmap (struct frame *f, int width, int height, int depth,
 
   if (depth <= 0)
     depth = DefaultDepthOfScreen (screen);
-  *ximg = XCreateImage (display, DefaultVisualOfScreen (screen),
+  *ximg = XCreateImage (display, FRAME_X_VISUAL (f),
 			depth, ZPixmap, 0, NULL, width, height,
 			depth > 16 ? 32 : depth > 8 ? 16 : 8, 0);
   if (*ximg == NULL)
